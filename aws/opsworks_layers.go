@@ -45,6 +45,50 @@ var (
 	opsworksFalseString = "false"
 )
 
+func resourceAwsOpsWorksLayerAutoScalingThreshold() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"alarms": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"cpu_threshold": {
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Default:  -1,
+			},
+			"ignore_metrics_time": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      1,
+				ValidateFunc: validation.IntBetween(1, 100),
+			},
+			"instance_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  1,
+			},
+			"load_threshold": {
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Default:  -1,
+			},
+			"memory_threshold": {
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Default:  -1,
+			},
+			"thresholds_wait_time": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      1,
+				ValidateFunc: validation.IntBetween(1, 100),
+			},
+		},
+	}
+}
+
 func (lt *opsworksLayerType) SchemaResource() *schema.Resource {
 	resourceSchema := map[string]*schema.Schema{
 		"auto_assign_elastic_ips": {
@@ -220,93 +264,13 @@ func (lt *opsworksLayerType) SchemaResource() *schema.Resource {
 						Type:     schema.TypeList,
 						Required: true,
 						MaxItems: 1,
-						Elem: &schema.Resource{
-							Schema: map[string]*schema.Schema{
-								"alarms": {
-									Type:     schema.TypeList,
-									Optional: true,
-									Elem:     &schema.Schema{Type: schema.TypeString},
-								},
-								"cpu_threshold": {
-									Type:     schema.TypeFloat,
-									Optional: true,
-									Default:  30,
-								},
-								"ignore_metrics_time": {
-									Type:         schema.TypeInt,
-									Optional:     true,
-									Default:      10,
-									ValidateFunc: validation.IntBetween(1, 100),
-								},
-								"instance_count": {
-									Type:     schema.TypeInt,
-									Optional: true,
-									Default:  1,
-								},
-								"load_threshold": {
-									Type:     schema.TypeFloat,
-									Optional: true,
-									Default:  -1,
-								},
-								"memory_threshold": {
-									Type:     schema.TypeFloat,
-									Optional: true,
-									Default:  -1,
-								},
-								"thresholds_wait_time": {
-									Type:         schema.TypeInt,
-									Optional:     true,
-									Default:      10,
-									ValidateFunc: validation.IntBetween(1, 100),
-								},
-							},
-						},
+						Elem:     resourceAwsOpsWorksLayerAutoScalingThreshold(),
 					},
 					"upscaling": {
 						Type:     schema.TypeList,
 						Required: true,
 						MaxItems: 1,
-						Elem: &schema.Resource{
-							Schema: map[string]*schema.Schema{
-								"alarms": {
-									Type:     schema.TypeList,
-									Optional: true,
-									Elem:     &schema.Schema{Type: schema.TypeString},
-								},
-								"cpu_threshold": {
-									Type:     schema.TypeFloat,
-									Optional: true,
-									Default:  80,
-								},
-								"ignore_metrics_time": {
-									Type:         schema.TypeInt,
-									Optional:     true,
-									Default:      5,
-									ValidateFunc: validation.IntBetween(1, 100),
-								},
-								"instance_count": {
-									Type:     schema.TypeInt,
-									Optional: true,
-									Default:  1,
-								},
-								"load_threshold": {
-									Type:     schema.TypeFloat,
-									Optional: true,
-									Default:  -1,
-								},
-								"memory_threshold": {
-									Type:     schema.TypeFloat,
-									Optional: true,
-									Default:  -1,
-								},
-								"thresholds_wait_time": {
-									Type:         schema.TypeInt,
-									Optional:     true,
-									Default:      5,
-									ValidateFunc: validation.IntBetween(1, 100),
-								},
-							},
-						},
+						Elem:     resourceAwsOpsWorksLayerAutoScalingThreshold(),
 					},
 				},
 			},
@@ -510,8 +474,14 @@ func (lt *opsworksLayerType) Create(d *schema.ResourceData, client *opsworks.Ops
 	}
 
 	/* Configure Autoscaling */
-	if d.Get("load_based_autoscaling") != nil && d.Get("load_based_autoscaling.0.enable").(bool) {
-		_, err := client.SetLoadBasedAutoScaling(lt.Autoscaling(d))
+	if d.Get("enable_load_based_autoscaling").(bool) {
+		autoScalingInput, err := lt.Autoscaling(d)
+
+		if err != nil {
+			return err
+		}
+
+		_, err = client.SetLoadBasedAutoScaling(autoScalingInput)
 		if err != nil {
 			return err
 		}
@@ -579,12 +549,18 @@ func (lt *opsworksLayerType) Update(d *schema.ResourceData, client *opsworks.Ops
 	}
 
 	/* Update Autoscaling */
-	_, erra := client.SetLoadBasedAutoScaling(lt.Autoscaling(d))
-	if erra != nil {
-		return erra
+	autoScalingInput, err := lt.Autoscaling(d)
+
+	if err != nil {
+		return err
 	}
 
-	_, err := client.UpdateLayer(req)
+	_, err = client.SetLoadBasedAutoScaling(autoScalingInput)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.UpdateLayer(req)
 	if err != nil {
 		return err
 	}
@@ -783,37 +759,37 @@ func (lt *opsworksLayerType) SetVolumeConfigurations(d *schema.ResourceData, v [
 	d.Set("ebs_volume", newValue)
 }
 
-func (lt *opsworksLayerType) Autoscaling(d *schema.ResourceData) *opsworks.SetLoadBasedAutoScalingInput {
+func (lt *opsworksLayerType) Autoscaling(d *schema.ResourceData) (*opsworks.SetLoadBasedAutoScalingInput, error) {
+	enableAutoscaling := d.Get("enable_load_based_autoscaling").(bool)
+
+	if enableAutoscaling && d.Get("load_based_autoscaling.#") == 0 {
+		return nil, fmt.Errorf("load_based_autoscaling block must be defined if load based autoscaling is enabled")
+	}
+
 	autoScalingInput := &opsworks.SetLoadBasedAutoScalingInput{
-		Enable:  aws.Bool(d.Get("enable_load_based_autoscaling").(bool)),
+		Enable:  aws.Bool(enableAutoscaling),
 		LayerId: aws.String(d.Id()),
 	}
 
-	if d.Get("load_based_autoscaling.0.downscaling") != nil {
-		autoScalingInput.DownScaling = &opsworks.AutoScalingThresholds{
-			Alarms:             expandStringList(d.Get("load_based_autoscaling.0.downscaling.0.alarms").([]interface{})),
-			CpuThreshold:       aws.Float64(d.Get("load_based_autoscaling.0.downscaling.0.cpu_threshold").(float64)),
-			IgnoreMetricsTime:  aws.Int64(int64(d.Get("load_based_autoscaling.0.downscaling.0.ignore_metrics_time").(int))),
-			InstanceCount:      aws.Int64(int64(d.Get("load_based_autoscaling.0.downscaling.0.instance_count").(int))),
-			LoadThreshold:      aws.Float64(d.Get("load_based_autoscaling.0.downscaling.0.load_threshold").(float64)),
-			MemoryThreshold:    aws.Float64(d.Get("load_based_autoscaling.0.downscaling.0.memory_threshold").(float64)),
-			ThresholdsWaitTime: aws.Int64(int64(d.Get("load_based_autoscaling.0.downscaling.0.thresholds_wait_time").(int))),
+	if enableAutoscaling && d.Get("load_based_autoscaling.0.downscaling") != nil {
+		downscalingThreshold, err := lt.SetAutoScalingThreshold(d, "downscaling")
+		if err != nil {
+			return nil, err
 		}
+
+		autoScalingInput.DownScaling = downscalingThreshold
 	}
 
-	if d.Get("load_based_autoscaling.0.upscaling") != nil {
-		autoScalingInput.UpScaling = &opsworks.AutoScalingThresholds{
-			Alarms:             expandStringList(d.Get("load_based_autoscaling.0.upscaling.0.alarms").([]interface{})),
-			CpuThreshold:       aws.Float64(d.Get("load_based_autoscaling.0.upscaling.0.cpu_threshold").(float64)),
-			IgnoreMetricsTime:  aws.Int64(int64(d.Get("load_based_autoscaling.0.upscaling.0.ignore_metrics_time").(int))),
-			InstanceCount:      aws.Int64(int64(d.Get("load_based_autoscaling.0.upscaling.0.instance_count").(int))),
-			LoadThreshold:      aws.Float64(d.Get("load_based_autoscaling.0.upscaling.0.load_threshold").(float64)),
-			MemoryThreshold:    aws.Float64(d.Get("load_based_autoscaling.0.upscaling.0.memory_threshold").(float64)),
-			ThresholdsWaitTime: aws.Int64(int64(d.Get("load_based_autoscaling.0.upscaling.0.thresholds_wait_time").(int))),
+	if enableAutoscaling && d.Get("load_based_autoscaling.0.upscaling") != nil {
+		upscalingThreshold, err := lt.SetAutoScalingThreshold(d, "upscaling")
+		if err != nil {
+			return nil, err
 		}
+
+		autoScalingInput.UpScaling = upscalingThreshold
 	}
 
-	return autoScalingInput
+	return autoScalingInput, nil
 }
 
 func (lt *opsworksLayerType) SetAutoscaling(d *schema.ResourceData, as *opsworks.LoadBasedAutoScalingConfiguration) {
@@ -869,4 +845,26 @@ func (lt *opsworksLayerType) SetAutoscaling(d *schema.ResourceData, as *opsworks
 	if as.UpScaling.IgnoreMetricsTime != nil {
 		d.Set("load_based_autoscaling.0.upscaling.0.ignore_metrics_time", as.UpScaling.IgnoreMetricsTime)
 	}
+}
+
+func (lt *opsworksLayerType) SetAutoScalingThreshold(d *schema.ResourceData, thresholdType string) (*opsworks.AutoScalingThresholds, error) {
+	threshold := fmt.Sprintf("load_based_autoscaling.0.%s.0.", thresholdType)
+	cpuThreshold := d.Get(threshold + "cpu_threshold").(float64)
+	loadThreshold := d.Get(threshold + "load_threshold").(float64)
+	memoryThreshold := d.Get(threshold + "memory_threshold").(float64)
+
+	// Cannot have all thresholds disabled if autoscaling is enabled
+	if cpuThreshold == loadThreshold && cpuThreshold == memoryThreshold && cpuThreshold == -1 {
+		return nil, fmt.Errorf("at least one " + thresholdType + " threshold must be set if autoscaling is enabled")
+	}
+
+	return &opsworks.AutoScalingThresholds{
+		Alarms:             expandStringList(d.Get(threshold + "alarms").([]interface{})),
+		CpuThreshold:       aws.Float64(cpuThreshold),
+		IgnoreMetricsTime:  aws.Int64(int64(d.Get(threshold + "ignore_metrics_time").(int))),
+		InstanceCount:      aws.Int64(int64(d.Get(threshold + "instance_count").(int))),
+		LoadThreshold:      aws.Float64(loadThreshold),
+		MemoryThreshold:    aws.Float64(memoryThreshold),
+		ThresholdsWaitTime: aws.Int64(int64(d.Get(threshold + "thresholds_wait_time").(int))),
+	}, nil
 }
