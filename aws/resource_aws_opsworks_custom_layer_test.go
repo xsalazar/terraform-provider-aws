@@ -5,12 +5,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/opsworks"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/opsworks"
 )
 
 // These tests assume the existence of predefined Opsworks IAM roles named `aws-opsworks-ec2-role`
@@ -118,58 +119,42 @@ func TestAccAWSOpsworksCustomLayer_noVPC(t *testing.T) {
 func TestAccAWSOpsworksCustomLayer_autoscaling(t *testing.T) {
 	stackName := fmt.Sprintf("tf-%d", acctest.RandInt())
 	var opslayer opsworks.Layer
+	resourceName := "aws_opsworks_custom_layer.tf-acc"
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckAwsOpsworksCustomLayerDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAwsOpsworksCustomLayerAutoscalingGroup(stackName),
+				Config: testAccAwsOpsworksCustomLayerAutoscalingGroup(stackName, false),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSOpsworksCustomLayerExists("aws_opsworks_custom_layer.tf-acc", &opslayer),
+					testAccCheckAWSOpsworksCustomLayerExists(resourceName, &opslayer),
 					testAccCheckAWSOpsworksCreateLayerAttributes(&opslayer, stackName),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "name", stackName,
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.enable", "true",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.downscaling.0.cpu_threshold", "20",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.downscaling.0.ignore_metrics_time", "15",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.downscaling.0.instance_count", "2",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.downscaling.0.load_threshold", "5",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.downscaling.0.memory_threshold", "20",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.downscaling.0.thresholds_wait_time", "30",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.upscaling.0.cpu_threshold", "80",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.upscaling.0.ignore_metrics_time", "15",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.upscaling.0.instance_count", "3",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.upscaling.0.load_threshold", "10",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.upscaling.0.memory_threshold", "80",
-					),
-					resource.TestCheckResourceAttr(
-						"aws_opsworks_custom_layer.tf-acc", "load_based_autoscaling.0.upscaling.0.thresholds_wait_time", "30",
-					),
+					resource.TestCheckResourceAttr(resourceName, "name", stackName),
+					resource.TestCheckResourceAttr(resourceName, "enable_load_based_autoscaling", "false"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.#", "0"),
+				),
+			},
+			{
+				Config: testAccAwsOpsworksCustomLayerAutoscalingGroup(stackName, true),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAWSOpsworksCustomLayerExists(resourceName, &opslayer),
+					testAccCheckAWSOpsworksCreateLayerAttributes(&opslayer, stackName),
+					resource.TestCheckResourceAttr(resourceName, "name", stackName),
+					resource.TestCheckResourceAttr(resourceName, "enable_load_based_autoscaling", "true"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.downscaling.0.cpu_threshold", "20"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.downscaling.0.ignore_metrics_time", "15"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.downscaling.0.instance_count", "2"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.downscaling.0.load_threshold", "5"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.downscaling.0.memory_threshold", "20"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.downscaling.0.thresholds_wait_time", "30"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.upscaling.0.cpu_threshold", "80"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.upscaling.0.ignore_metrics_time", "15"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.upscaling.0.instance_count", "3"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.upscaling.0.load_threshold", "10"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.upscaling.0.memory_threshold", "80"),
+					resource.TestCheckResourceAttr(resourceName, "load_based_autoscaling.0.upscaling.0.thresholds_wait_time", "30"),
 				),
 			},
 		},
@@ -447,7 +432,7 @@ resource "aws_opsworks_custom_layer" "tf-acc" {
 `, name, testAccAwsOpsworksStackConfigNoVpcCreate(name), testAccAwsOpsworksCustomLayerSecurityGroups(name))
 }
 
-func testAccAwsOpsworksCustomLayerAutoscalingGroup(name string) string {
+func testAccAwsOpsworksCustomLayerAutoscalingGroup(name string, enable bool) string {
 	return fmt.Sprintf(`
 resource "aws_opsworks_custom_layer" "tf-acc" {
   stack_id               = "${aws_opsworks_stack.tf-acc.id}"
@@ -472,8 +457,8 @@ resource "aws_opsworks_custom_layer" "tf-acc" {
     raid_level      = 0
   }
 
+  enable_load_based_autoscaling = %t
   load_based_autoscaling {
-    enable = true
     downscaling {
       cpu_threshold        = 20
       ignore_metrics_time  = 15
@@ -497,5 +482,5 @@ resource "aws_opsworks_custom_layer" "tf-acc" {
 %s
 
 %s 
-`, name, testAccAwsOpsworksStackConfigNoVpcCreate(name), testAccAwsOpsworksCustomLayerSecurityGroups(name))
+`, name, enable, testAccAwsOpsworksStackConfigNoVpcCreate(name), testAccAwsOpsworksCustomLayerSecurityGroups(name))
 }
