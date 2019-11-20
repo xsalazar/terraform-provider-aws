@@ -1,4 +1,75 @@
-## 2.36.0 (Unreleased)
+## 2.39.0 (Unreleased)
+
+FEATURES:
+
+* **New Data Source:** `aws_guardduty_detector` [GH-10463]
+* **New Resource:** `aws_glue_workflow` [GH-10891]
+
+ENHANCEMENTS:
+
+* provider: Support for EC2 Metadata secure tokens [GH-10940]
+* resource/aws_glue_job: Add `number_of_workers` and `worker_type` arguments [GH-9115]
+* resource/aws_glue_trigger: Add `workflow_name` argument [GH-9762]
+* resource/aws_glue_trigger: Add `actions` configuration block `crawler_name` argument [GH-10190]
+* resource/aws_glue_trigger: Add `predicate` `conditions` configuration block `crawler_name` and `crawl_state` arguments [GH-10190]
+* resource/aws_iam_group_policy: Add IAM Policy JSON difference suppression and validation to `policy` argument [GH-9660]
+* resource/aws_lambda_event_source_mapping: Add `maximum_batching_window_in_seconds` argument [GH-10051]
+* resource/aws_lambda_function: Support `java11`, `nodejs12.x`, and `python3.8` as valid `runtime` argument values in validation [GH-10938]
+* resource/aws_resourcegroups_group: Add `tags` argument [GH-10640]
+
+BUG FIXES:
+
+* data_source/aws_instance: Fixes a bug where multiple EBS volumes would get collapsed and only one would return [GH-10045]
+* resource/aws_appmesh_virtual_node: Allow FQDN values in `service_discovery` `aws_cloud_map` configuration block `namespace_name` and `service_name` argument validations [GH-9788]
+* resource/aws_iam_instance_profile: Remove requirement to specify a role, as it is not required by the API [GH-10525]
+* resource/aws_opsworks_application: Fixes issue where `terraform apply` continuously suggests applying changes to `ssh_key` or `password` in `app_source` property [GH-10175]
+* resource/aws_opsworks_stack: Fixes issue where `terraform apply` continuously suggests applying changes to `ssh_key` or `password` in `custom_cookbooks_source` property [GH-10175]
+
+## 2.38.0 (November 18, 2019)
+
+FEATURES:
+
+* **New Resource:** `aws_eks_node_group` ([#10916](https://github.com/terraform-providers/terraform-provider-aws/issues/10916))
+
+## 2.37.0 (November 18, 2019)
+
+ENHANCEMENTS:
+
+* resource/aws_api_gateway_rest_api: Add `tags` argument and `arn` attribute ([#10581](https://github.com/terraform-providers/terraform-provider-aws/issues/10581))
+* resource/aws_db_instance: Add `ca_cert_identifier` argument ([#10490](https://github.com/terraform-providers/terraform-provider-aws/issues/10490))
+* resource/aws_dlm_lifecycle_policy: Add `tags` argument and `arn` attribute ([#10864](https://github.com/terraform-providers/terraform-provider-aws/issues/10864))
+* resource/aws_efs_file_system: Add `AFTER_7_DAYS` as a valid `lifecycle_policy` configuratio block `transition_to_ia` argument value ([#10825](https://github.com/terraform-providers/terraform-provider-aws/issues/10825))
+* resource/aws_glue_crawler: Add `tags` argument ([#10805](https://github.com/terraform-providers/terraform-provider-aws/issues/10805))
+* resource/aws_s3_bucket_inventory: Add `IntelligentTieringAccessTier` as valid value for `optional_fields` argument ([#10746](https://github.com/terraform-providers/terraform-provider-aws/issues/10746))
+* resource/aws_waf_geo_match_set: Support resource import and add `arn` attribute ([#10480](https://github.com/terraform-providers/terraform-provider-aws/issues/10480))
+* resource/aws_waf_regex_match_set: Support resource import and add `arn` attribute ([#10481](https://github.com/terraform-providers/terraform-provider-aws/issues/10481))
+* resource/aws_waf_regex_pattern_set: Support resource import and add `arn` attribute ([#10482](https://github.com/terraform-providers/terraform-provider-aws/issues/10482))
+* resource/aws_waf_size_constraint_set: Support resource import and add `arn` attribute ([#10484](https://github.com/terraform-providers/terraform-provider-aws/issues/10484))
+* resource/aws_waf_xss_match_set: Support resource import and add `arn` attribute ([#10485](https://github.com/terraform-providers/terraform-provider-aws/issues/10485))
+* resource/aws_wafregional_rate_based_rule: Add `tags` argument and `arn` attribute ([#10897](https://github.com/terraform-providers/terraform-provider-aws/issues/10897))
+* resource/aws_wafregional_rule_group: Add `tags` argument and `arn` attribute ([#10896](https://github.com/terraform-providers/terraform-provider-aws/issues/10896))
+* resource/aws_wafregional_rule: Add `tags` argument and `arn` attribute ([#10895](https://github.com/terraform-providers/terraform-provider-aws/issues/10895))
+* resource/aws_wafregional_web_acl: Add `tags` argument ([#10889](https://github.com/terraform-providers/terraform-provider-aws/issues/10889))
+* resource/aws_wafregional_web_acl_association: Support resource import ([#10538](https://github.com/terraform-providers/terraform-provider-aws/issues/10538))
+* resource/aws_cloudtrail: support Tag on create ([#10818](https://github.com/terraform-providers/terraform-provider-aws/issues/10818))
+
+BUG FIXES:
+
+* data-source/aws_iam_policy_document: Prevent panic when combining single principal identifier with multiple principal identifiers ([#10780](https://github.com/terraform-providers/terraform-provider-aws/issues/10780))
+* data-source/aws_iam_policy_document: Prevent losing identifier elements when combining single and multiple principals identifiers ([#10844](https://github.com/terraform-providers/terraform-provider-aws/issues/10844))
+* resource/aws_servicequotas_service_quota: Remove resource from Terraform state on `NoSuchResourceException` error ([#10735](https://github.com/terraform-providers/terraform-provider-aws/issues/10735))
+
+## 2.36.0 (November 14, 2019)
+
+ENHANCEMENTS:
+
+* data-source/aws_iam_group: Add `users` attribute ([#7132](https://github.com/terraform-providers/terraform-provider-aws/issues/7132))
+* resource/aws_apigateway_stage: Add `arn` attribute ([#10570](https://github.com/terraform-providers/terraform-provider-aws/issues/10570))
+* resource/aws_apigateway_usage_plan: Add `tags` argument and `arn` attribute ([#10566](https://github.com/terraform-providers/terraform-provider-aws/issues/10566))
+* resource/aws_s3_bucket: Retry reading tags on `NoSuchBucket` errors due to eventual inconsistency ([#10863](https://github.com/terraform-providers/terraform-provider-aws/issues/10863))
+* resource/aws_waf_rule: Add `arn` attribute ([#10798](https://github.com/terraform-providers/terraform-provider-aws/issues/10798))
+* resource/aws_waf_rule_group: Add `arn` attribute ([#10799](https://github.com/terraform-providers/terraform-provider-aws/issues/10799))
+
 ## 2.35.0 (November 07, 2019)
 
 NOTES:
