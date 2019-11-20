@@ -52,6 +52,7 @@ func resourceAwsOpsWorksLayerAutoScalingThreshold() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				MaxItems: 5,
 			},
 			"cpu_threshold": {
 				Type:     schema.TypeFloat,
