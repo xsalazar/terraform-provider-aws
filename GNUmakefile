@@ -31,6 +31,12 @@ fmt:
 fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
 
+gencheck:
+	@echo "==> Checking generated source code..."
+	@$(MAKE) gen
+	@git diff --compact-summary --exit-code || \
+		(echo; echo "Unexpected difference in directories after code generation. Run 'make gen' command and commit."; exit 1)
+
 websitefmtcheck:
 	@sh -c "'$(CURDIR)/scripts/websitefmtcheck.sh'"
 
@@ -47,15 +53,19 @@ depscheck:
 docscheck:
 	@tfproviderdocs check \
 		-allowed-resource-subcategories-file website/allowed-subcategories.txt \
+		-ignore-side-navigation-data-sources aws_alb,aws_alb_listener,aws_alb_target_group,aws_kms_secret \
 		-require-resource-subcategory
 
 lint:
 	@echo "==> Checking source code against linters..."
 	@golangci-lint run ./$(PKG_NAME)/...
-	@tfproviderlint \
+	@awsproviderlint \
 		-c 1 \
 		-AT001 \
 		-AT002 \
+		-AT006 \
+		-AT007 \
+		-R004 \
 		-S001 \
 		-S002 \
 		-S003 \
@@ -73,11 +83,20 @@ lint:
 		-S016 \
 		-S017 \
 		-S019 \
+		-S021 \
+		-S025 \
+		-S026 \
+		-S027 \
+		-S028 \
+		-S029 \
+		-S030 \
+		-V003 \
+		-V006 \
 		./$(PKG_NAME)
 
 tools:
+	GO111MODULE=on go install ./awsproviderlint
 	GO111MODULE=on go install github.com/bflad/tfproviderdocs
-	GO111MODULE=on go install github.com/bflad/tfproviderlint/cmd/tfproviderlint
 	GO111MODULE=on go install github.com/client9/misspell/cmd/misspell
 	GO111MODULE=on go install github.com/golangci/golangci-lint/cmd/golangci-lint
 
@@ -99,6 +118,7 @@ endif
 website-lint:
 	@echo "==> Checking website against linters..."
 	@misspell -error -source=text website/
+	@docker run -v $(PWD):/markdown 06kellyjac/markdownlint-cli website/docs/
 
 website-test:
 ifeq (,$(wildcard $(GOPATH)/src/$(WEBSITE_REPO)))

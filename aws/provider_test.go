@@ -17,6 +17,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
+const rfc3339RegexPattern = `^[0-9]{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?([Zz]|([+-]([01][0-9]|2[0-3]):[0-5][0-9]))$`
+
 var testAccProviders map[string]terraform.ResourceProvider
 var testAccProviderFactories func(providers *[]*schema.Provider) map[string]terraform.ResourceProviderFactory
 var testAccProvider *schema.Provider
@@ -107,6 +109,19 @@ func testAccCheckResourceAttrRegionalARN(resourceName, attributeName, arnService
 	}
 }
 
+// testAccCheckResourceAttrRegionalARNNoAccount ensures the Terraform state exactly matches a formatted ARN with region but without account ID
+func testAccCheckResourceAttrRegionalARNNoAccount(resourceName, attributeName, arnService, arnResource string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		attributeValue := arn.ARN{
+			Partition: testAccGetPartition(),
+			Region:    testAccGetRegion(),
+			Resource:  arnResource,
+			Service:   arnService,
+		}.String()
+		return resource.TestCheckResourceAttr(resourceName, attributeName, attributeValue)(s)
+	}
+}
+
 // testAccMatchResourceAttrRegionalARN ensures the Terraform state regexp matches a formatted ARN with region
 func testAccMatchResourceAttrRegionalARN(resourceName, attributeName, arnService string, arnResourceRegexp *regexp.Regexp) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -145,6 +160,21 @@ func testAccMatchResourceAttrRegionalARNNoAccount(resourceName, attributeName, a
 		}
 
 		return resource.TestMatchResourceAttr(resourceName, attributeName, attributeMatch)(s)
+	}
+}
+
+// testAccMatchResourceAttrRegionalHostname ensures the Terraform state regexp matches a formatted DNS hostname with region and partition DNS suffix
+func testAccMatchResourceAttrRegionalHostname(resourceName, attributeName, serviceName string, hostnamePrefixRegexp *regexp.Regexp) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		hostnameRegexpPattern := fmt.Sprintf("%s\\.%s\\.%s\\.%s$", hostnamePrefixRegexp.String(), serviceName, testAccGetRegion(), testAccGetPartitionDNSSuffix())
+
+		hostnameRegexp, err := regexp.Compile(hostnameRegexpPattern)
+
+		if err != nil {
+			return fmt.Errorf("Unable to compile hostname regexp (%s): %s", hostnameRegexp, err)
+		}
+
+		return resource.TestMatchResourceAttr(resourceName, attributeName, hostnameRegexp)(s)
 	}
 }
 
@@ -191,6 +221,12 @@ func testAccMatchResourceAttrGlobalARN(resourceName, attributeName, arnService s
 
 		return resource.TestMatchResourceAttr(resourceName, attributeName, attributeMatch)(s)
 	}
+}
+
+// testAccCheckResourceAttrRfc3339 ensures the Terraform state matches a RFC3339 value
+// This TestCheckFunc will likely be moved to the Terraform Plugin SDK in the future.
+func testAccCheckResourceAttrRfc3339(resourceName, attributeName string) resource.TestCheckFunc {
+	return resource.TestMatchResourceAttr(resourceName, attributeName, regexp.MustCompile(rfc3339RegexPattern))
 }
 
 // testAccCheckListHasSomeElementAttrPair is a TestCheckFunc which validates that the collection on the left has an element with an attribute value
@@ -281,6 +317,13 @@ func testAccGetPartition() string {
 		return partition.ID()
 	}
 	return "aws"
+}
+
+func testAccGetPartitionDNSSuffix() string {
+	if partition, ok := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), testAccGetRegion()); ok {
+		return partition.DNSSuffix()
+	}
+	return "amazonaws.com"
 }
 
 func testAccGetAlternateRegionPartition() string {

@@ -284,6 +284,7 @@ func Provider() terraform.ResourceProvider {
 			"aws_sqs_queue":                                 dataSourceAwsSqsQueue(),
 			"aws_ssm_document":                              dataSourceAwsSsmDocument(),
 			"aws_ssm_parameter":                             dataSourceAwsSsmParameter(),
+			"aws_ssm_patch_baseline":                        dataSourceAwsSsmPatchBaseline(),
 			"aws_storagegateway_local_disk":                 dataSourceAwsStorageGatewayLocalDisk(),
 			"aws_subnet":                                    dataSourceAwsSubnet(),
 			"aws_subnet_ids":                                dataSourceAwsSubnetIDs(),
@@ -430,6 +431,7 @@ func Provider() terraform.ResourceProvider {
 			"aws_datasync_location_efs":                               resourceAwsDataSyncLocationEfs(),
 			"aws_datasync_location_nfs":                               resourceAwsDataSyncLocationNfs(),
 			"aws_datasync_location_s3":                                resourceAwsDataSyncLocationS3(),
+			"aws_datasync_location_smb":                               resourceAwsDataSyncLocationSmb(),
 			"aws_datasync_task":                                       resourceAwsDataSyncTask(),
 			"aws_dax_cluster":                                         resourceAwsDaxCluster(),
 			"aws_dax_parameter_group":                                 resourceAwsDaxParameterGroup(),
@@ -1075,6 +1077,7 @@ func init() {
 		"wafregional",
 		"wafv2",
 		"worklink",
+		"workmail",
 		"workspaces",
 		"xray",
 	}
