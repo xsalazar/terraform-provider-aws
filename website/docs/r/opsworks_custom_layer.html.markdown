@@ -71,6 +71,7 @@ A `load_based_autoscaling` block supports the following blocks:
 An `upscaling` block supports the following arguments:
 
 Though the three thresholds are optional, at least one threshold must be set when using load-based autoscaling.
+
 * `alarms` - (Optional) Custom Cloudwatch auto scaling alarms, to be used as thresholds. This parameter takes a list of up to five alarm names, which are case sensitive and must be in the same region as the stack.
 * `cpu_threshold` - (Optional) The CPU utilization threshold, as a percent of the available CPU. A value of -1 disables the threshold.
 * `ignore_metrics_time` - (Optional) The amount of time (in minutes) after a scaling event occurs that AWS OpsWorks Stacks should ignore metrics and suppress additional scaling events.
@@ -82,6 +83,7 @@ Though the three thresholds are optional, at least one threshold must be set whe
 A `downscaling` block supports the following arguments:
 
 Though the three thresholds are optional, at least one threshold must be set when using load-based autoscaling.
+
 * `alarms` - (Optional) Custom Cloudwatch auto scaling alarms, to be used as thresholds. This parameter takes a list of up to five alarm names, which are case sensitive and must be in the same region as the stack.
 * `cpu_threshold` - (Optional) The CPU utilization threshold, as a percent of the available CPU. A value of -1 disables the threshold.
 * `ignore_metrics_time` - (Optional) The amount of time (in minutes) after a scaling event occurs that AWS OpsWorks Stacks should ignore metrics and suppress additional scaling events.
