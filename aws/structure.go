@@ -2443,9 +2443,9 @@ func flattenApiGatewayUsagePlanQuota(s *apigateway.QuotaSettings) []map[string]i
 	return []map[string]interface{}{settings}
 }
 
-func buildApiGatewayInvokeURL(restApiId, region, stageName string) string {
-	return fmt.Sprintf("https://%s.execute-api.%s.amazonaws.com/%s",
-		restApiId, region, stageName)
+func buildApiGatewayInvokeURL(client *AWSClient, restApiId, stageName string) string {
+	hostname := client.RegionalHostname(fmt.Sprintf("%s.execute-api", restApiId))
+	return fmt.Sprintf("https://%s/%s", hostname, stageName)
 }
 
 func expandCognitoSupportedLoginProviders(config map[string]interface{}) map[string]*string {
@@ -3477,33 +3477,6 @@ func flattenCognitoUserPoolSchema(configuredAttributes, inputs []*cognitoidentit
 	}
 
 	return values
-}
-
-func expandCognitoUserPoolSmsConfiguration(config map[string]interface{}) *cognitoidentityprovider.SmsConfigurationType {
-	smsConfigurationType := &cognitoidentityprovider.SmsConfigurationType{
-		SnsCallerArn: aws.String(config["sns_caller_arn"].(string)),
-	}
-
-	if v, ok := config["external_id"]; ok && v.(string) != "" {
-		smsConfigurationType.ExternalId = aws.String(v.(string))
-	}
-
-	return smsConfigurationType
-}
-
-func flattenCognitoUserPoolSmsConfiguration(s *cognitoidentityprovider.SmsConfigurationType) []map[string]interface{} {
-	m := map[string]interface{}{}
-
-	if s == nil {
-		return nil
-	}
-
-	if s.ExternalId != nil {
-		m["external_id"] = *s.ExternalId
-	}
-	m["sns_caller_arn"] = *s.SnsCallerArn
-
-	return []map[string]interface{}{m}
 }
 
 func expandCognitoUserPoolVerificationMessageTemplate(config map[string]interface{}) *cognitoidentityprovider.VerificationMessageTemplateType {

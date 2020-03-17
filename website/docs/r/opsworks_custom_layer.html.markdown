@@ -42,6 +42,7 @@ The following arguments are supported:
 * `custom_json` - (Optional) Custom JSON attributes to apply to the layer.
 * `enable_load_based_autoscaling` - (Optional) Whether to enable load-based autoscaling for the layer.
 * `load_based_autoscaling` - (Optional) `load_based_autoscaling` block, as described below, defines the load-based autoscaling settings for the layer.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 The following extra optional arguments, all lists of Chef recipe names, allow
 custom Chef recipes to be applied to layer instances at the five different
@@ -97,6 +98,7 @@ Though the three thresholds are optional, at least one threshold must be set whe
 In addition to all arguments above, the following attributes are exported:
 
 * `id` - The id of the layer.
+* `arn` - The Amazon Resource Name(ARN) of the layer.
 
 ## Import
 
