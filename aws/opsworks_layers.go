@@ -436,7 +436,7 @@ func (lt *opsworksLayerType) Read(d *schema.ResourceData, client *opsworks.OpsWo
 		},
 	}
 	autoScalings, err := client.DescribeLoadBasedAutoScaling(ascRequest)
-	
+
 	if err != nil {
 		return err
 	}
@@ -526,7 +526,6 @@ func (lt *opsworksLayerType) Create(d *schema.ResourceData, client *opsworks.Ops
 			return err
 		}
 	}
-
 
 	return lt.Read(d, client)
 }

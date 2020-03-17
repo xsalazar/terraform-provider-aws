@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/opsworks"
 )
 
@@ -176,7 +175,7 @@ func TestAccAWSOpsworksCustomLayer_autoscaling(t *testing.T) {
 			{
 				Config: testAccAwsOpsworksCustomLayerAutoscalingGroup(stackName, false),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSOpsworksCustomLayerExists(resourceName, &opslayer),
+					testAccCheckAWSOpsworksLayerExists(resourceName, &opslayer),
 					testAccCheckAWSOpsworksCreateLayerAttributes(&opslayer, stackName),
 					resource.TestCheckResourceAttr(resourceName, "name", stackName),
 					resource.TestCheckResourceAttr(resourceName, "enable_load_based_autoscaling", "false"),
@@ -186,7 +185,7 @@ func TestAccAWSOpsworksCustomLayer_autoscaling(t *testing.T) {
 			{
 				Config: testAccAwsOpsworksCustomLayerAutoscalingGroup(stackName, true),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAWSOpsworksCustomLayerExists(resourceName, &opslayer),
+					testAccCheckAWSOpsworksLayerExists(resourceName, &opslayer),
 					testAccCheckAWSOpsworksCreateLayerAttributes(&opslayer, stackName),
 					resource.TestCheckResourceAttr(resourceName, "name", stackName),
 					resource.TestCheckResourceAttr(resourceName, "enable_load_based_autoscaling", "true"),
@@ -533,4 +532,81 @@ resource "aws_opsworks_custom_layer" "tf-acc" {
 
 %s 
 `, name, enable, testAccAwsOpsworksStackConfigNoVpcCreate(name), testAccAwsOpsworksCustomLayerSecurityGroups(name))
+}
+
+func testAccAwsOpsworksCustomLayerConfigTags1(name, tagKey1, tagValue1 string) string {
+	return testAccAwsOpsworksStackConfigVpcCreate(name) +
+		testAccAwsOpsworksCustomLayerSecurityGroups(name) +
+		fmt.Sprintf(`
+resource "aws_opsworks_custom_layer" "test" {
+  stack_id               = "${aws_opsworks_stack.tf-acc.id}"
+  name                   = %[1]q
+  short_name             = "tf-ops-acc-custom-layer"
+  auto_assign_public_ips = false
+
+  custom_security_group_ids = [
+    "${aws_security_group.tf-ops-acc-layer1.id}",
+    "${aws_security_group.tf-ops-acc-layer2.id}",
+  ]
+
+  drain_elb_on_shutdown     = true
+  instance_shutdown_timeout = 300
+
+  system_packages = [
+    "git",
+    "golang",
+  ]
+
+  ebs_volume {
+    type            = "gp2"
+    number_of_disks = 2
+    mount_point     = "/home"
+    size            = 100
+    raid_level      = 0
+  }
+
+  tags = {
+    %[2]q = %[3]q
+  }
+}
+`, name, tagKey1, tagValue1)
+}
+
+func testAccAwsOpsworksCustomLayerConfigTags2(name, tagKey1, tagValue1, tagKey2, tagValue2 string) string {
+	return testAccAwsOpsworksStackConfigVpcCreate(name) +
+		testAccAwsOpsworksCustomLayerSecurityGroups(name) +
+		fmt.Sprintf(`
+resource "aws_opsworks_custom_layer" "test" {
+  stack_id               = "${aws_opsworks_stack.tf-acc.id}"
+  name                   = %[1]q
+  short_name             = "tf-ops-acc-custom-layer"
+  auto_assign_public_ips = false
+
+  custom_security_group_ids = [
+    "${aws_security_group.tf-ops-acc-layer1.id}",
+    "${aws_security_group.tf-ops-acc-layer2.id}",
+  ]
+
+  drain_elb_on_shutdown     = true
+  instance_shutdown_timeout = 300
+
+  system_packages = [
+    "git",
+    "golang",
+  ]
+
+  ebs_volume {
+    type            = "gp2"
+    number_of_disks = 2
+    mount_point     = "/home"
+    size            = 100
+    raid_level      = 0
+  }
+
+  tags = {
+    %[2]q = %[3]q
+    %[4]q = %[5]q
+  }
+}
+`, name, tagKey1, tagValue1, tagKey2, tagValue2)
 }
