@@ -932,9 +932,17 @@ func resourceAwsLambdaFunctionUpdate(d *schema.ResourceData, meta interface{}) e
 		configReq.Description = aws.String(d.Get("description").(string))
 	}
 
-	if d.HasChange("handler") {
-		configReq.Handler = aws.String(d.Get("handler").(string))
+	packageType := d.Get("package_type")
+	if packageType == lambda.PackageTypeZip {
+		if d.HasChange("handler") {
+			configReq.Handler = aws.String(d.Get("handler").(string))
+		}
+
+		if d.HasChange("runtime") {
+			configReq.Runtime = aws.String(d.Get("runtime").(string))
+		}
 	}
+
 	if d.HasChange("file_system_config") {
 		configReq.FileSystemConfigs = make([]*lambda.FileSystemConfig, 0)
 		if v, ok := d.GetOk("file_system_config"); ok && len(v.([]interface{})) > 0 {
@@ -994,9 +1002,6 @@ func resourceAwsLambdaFunctionUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	if d.HasChange("runtime") {
-		configReq.Runtime = aws.String(d.Get("runtime").(string))
-	}
 	if d.HasChange("environment") {
 		if v, ok := d.GetOk("environment"); ok {
 			environments := v.([]interface{})
